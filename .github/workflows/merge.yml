@@ -5,6 +5,9 @@ on:
     - cron: "0 */12 * * *"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -14,42 +17,20 @@ jobs:
 
       - name: Build subscription
         run: |
-          mkdir dist
-          touch dist/sub.txt
+          mkdir -p output
 
           while read url; do
-            curl -s --max-time 15 "$url" >> dist/sub.txt
-            echo "" >> dist/sub.txt
+            curl -s --max-time 15 "$url" >> output/sub.txt
+            echo "" >> output/sub.txt
           done < sources.txt
 
-          sort dist/sub.txt | uniq > dist/final.txt
+          sort output/sub.txt | uniq > sub.txt
 
-          mv dist/final.txt dist/index.txt
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-
-    steps:
-      - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4          git push          git push        run: |
+      - name: Commit file
+        run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
           git add sub.txt
-          git commit -m "update subscription" || echo "no changes"
-          git push          cat output/sub.txt >> output/link.txt
-
-      - name: Upload subscription
-        uses: actions/upload-artifact@v4
-        with:
-          name: subscription
-          path: output/link.txt
+          git commit -m "update sub" || echo "no changes"
+          git push
