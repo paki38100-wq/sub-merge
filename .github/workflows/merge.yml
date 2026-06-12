@@ -5,9 +5,6 @@ on:
     - cron: "0 */12 * * *"
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,26 +12,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download + Clean
+      - name: Build subscription
         run: |
-          mkdir output
-          touch output/raw.txt
+          mkdir dist
+          touch dist/sub.txt
 
           while read url; do
-            curl -s --max-time 15 "$url" >> output/raw.txt
-            echo "" >> output/raw.txt
+            curl -s --max-time 15 "$url" >> dist/sub.txt
+            echo "" >> dist/sub.txt
           done < sources.txt
 
-          sort output/raw.txt | uniq > sub.txt
+          sort dist/sub.txt | uniq > dist/final.txt
 
-      - name: Commit to repo
-        run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
+          mv dist/final.txt dist/index.txt
 
-          git add sub.txt
-          git commit -m "update sub" || echo "no changes"
-          git push          git push        run: |
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4          git push          git push        run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
