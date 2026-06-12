@@ -5,41 +5,35 @@ on:
   schedule:
     - cron: "0 */6 * * *"
 
-permissions:
-  contents: write
-
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: true
+      - uses: actions/checkout@v4
 
-      - name: Download and merge
+      - name: Build file
         run: |
-          > sub.txt
+          mkdir public
+          > public/sub.txt
 
           while read url; do
             echo "Fetching $url"
-            curl -s --max-time 15 "$url" >> sub.txt
-            echo "" >> sub.txt
+            curl -s --max-time 15 "$url" >> public/sub.txt
+            echo "" >> public/sub.txt
           done < sources.txt
 
-      - name: Clean file
-        run: |
-          sort sub.txt | uniq > tmp.txt
-          mv tmp.txt sub.txt
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
 
-      - name: Commit and push
-        run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
 
-          git add sub.txt
-
-          git commit -m "update sub.txt" || echo "no changes"
-
-          git push origin HEAD:main
+    steps:
+      - uses: actions/deploy-pages@v4
