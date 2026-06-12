@@ -1,4 +1,4 @@
-name: auto-subscription
+name: smart-subscription
 
 on:
   schedule:
@@ -10,24 +10,34 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Download + Merge + Clean
+      - name: Download + Merge
         run: |
           mkdir output
-          touch output/all.txt
+          touch output/raw.txt
 
           while read url; do
             echo "Fetching $url"
-            curl -s --max-time 15 "$url" >> output/all.txt
-            echo "" >> output/all.txt
+            curl -s --max-time 15 "$url" >> output/raw.txt
+            echo "" >> output/raw.txt
           done < sources.txt
 
-          sort output/all.txt | uniq > output/clean.txt
+      - name: Clean (remove duplicates)
+        run: |
+          sort output/raw.txt | uniq > output/clean.txt
 
-      - name: Upload result
+      - name: Encode to base64 subscription
+        run: |
+          base64 -w 0 output/clean.txt > output/sub.txt
+
+      - name: Create subscription file
+        run: |
+          echo "data:text/plain;base64," > output/link.txt
+          cat output/sub.txt >> output/link.txt
+
+      - name: Upload subscription
         uses: actions/upload-artifact@v4
         with:
           name: subscription
-          path: output/clean.txt
+          path: output/link.txt
