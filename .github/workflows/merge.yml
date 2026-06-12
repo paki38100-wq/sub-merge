@@ -15,8 +15,10 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
 
-      - name: Download and merge subscriptions
+      - name: Download and merge
         run: |
           > sub.txt
 
@@ -26,17 +28,18 @@ jobs:
             echo "" >> sub.txt
           done < sources.txt
 
-      - name: Clean duplicates
+      - name: Clean file
         run: |
           sort sub.txt | uniq > tmp.txt
           mv tmp.txt sub.txt
 
-      - name: Commit sub.txt to repo
+      - name: Commit and push
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
           git add sub.txt
+
           git commit -m "update sub.txt" || echo "no changes"
-          git push
-          git push
+
+          git push origin HEAD:main
