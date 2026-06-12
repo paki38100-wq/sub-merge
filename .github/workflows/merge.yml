@@ -5,6 +5,9 @@ on:
     - cron: "0 */12 * * *"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -12,29 +15,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download sources
+      - name: Download + Clean
         run: |
           mkdir output
           touch output/raw.txt
 
           while read url; do
-            echo "Fetching $url"
             curl -s --max-time 15 "$url" >> output/raw.txt
             echo "" >> output/raw.txt
           done < sources.txt
 
-      - name: Clean + deduplicate
-        run: |
           sort output/raw.txt | uniq > sub.txt
 
-      - name: Commit subscription file
+      - name: Commit to repo
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
           git add sub.txt
-          git commit -m "update subscription" || echo "no changes"
-          git push        run: |
+          git commit -m "update sub" || echo "no changes"
+          git push          git push        run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
