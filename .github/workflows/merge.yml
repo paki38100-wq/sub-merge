@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download + Merge
+      - name: Download sources
         run: |
           mkdir output
           touch output/raw.txt
@@ -23,18 +23,24 @@ jobs:
             echo "" >> output/raw.txt
           done < sources.txt
 
-      - name: Clean (remove duplicates)
+      - name: Clean + deduplicate
         run: |
           sort output/raw.txt | uniq > output/clean.txt
 
-      - name: Encode to base64 subscription
+      - name: Create REAL subscription file
         run: |
-          base64 -w 0 output/clean.txt > output/sub.txt
+          # اینجا ما فایل subscription استاندارد می‌سازیم
+          # (فعلاً همان متن خام تمیز را می‌دهیم، NekoBox خودش decode می‌کند)
+          cp output/clean.txt sub.txt
 
-      - name: Create subscription file
+      - name: Commit subscription
         run: |
-          echo "data:text/plain;base64," > output/link.txt
-          cat output/sub.txt >> output/link.txt
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+
+          git add sub.txt
+          git commit -m "update subscription" || echo "no changes"
+          git push          cat output/sub.txt >> output/link.txt
 
       - name: Upload subscription
         uses: actions/upload-artifact@v4
